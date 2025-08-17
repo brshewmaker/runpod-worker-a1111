@@ -35,7 +35,6 @@ API_SCHEMA = {
             'sdapi/v1/extensions',
             'sdapi/v1/loras',
             'sdapi/v1/refresh-loras',
-            'controlnet/model_list',
             'v1/download',
             'v1/sync'
         ]

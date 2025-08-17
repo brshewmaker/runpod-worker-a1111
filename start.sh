@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 
-echo "Worker Initiated"
+echo "Minimal A1111 Worker Initiated"
 
 echo "Symlinking files from Network Volume"
 rm -rf /workspace && \
   ln -s /runpod-volume /workspace
 
 if [ -f "/workspace/venv/bin/activate" ]; then
-    echo "Starting WebUI API"
+    echo "Starting Minimal WebUI API"
     source /workspace/venv/bin/activate
     TCMALLOC="$(ldconfig -p | grep -Po "libtcmalloc.so.\d" | head -n 1)"
     export LD_PRELOAD="${TCMALLOC}"
     export PYTHONUNBUFFERED=true
     export HF_HOME="/workspace"
+    
+    # Start A1111 with minimal flags (no extension-specific arguments)
     python3 /workspace/stable-diffusion-webui/webui.py \
       --xformers \
       --no-half-vae \
@@ -31,10 +33,12 @@ if [ -f "/workspace/venv/bin/activate" ]; then
     deactivate
 else
     echo "ERROR: The Python Virtual Environment (/workspace/venv/bin/activate) could not be activated"
-    echo "1. Ensure that you have followed the instructions at: https://github.com/ashleykleynhans/runpod-worker-a1111/blob/main/docs/installing.md"
-    echo "2. Ensure that you have used the Pytorch image for the installation and NOT a Stable Diffusion image."
-    echo "3. Ensure that you have attached your Network Volume to your endpoint."
-    echo "4. Ensure that you didn't assign any other invalid regions to your endpoint."
+    echo "Troubleshooting steps:"
+    echo "1. Ensure you have run the minimal installation script on your Network Volume"
+    echo "2. Use the command: bash scripts/install-minimal.sh"
+    echo "3. Ensure you used a PyTorch base image for installation (not a Stable Diffusion image)"
+    echo "4. Ensure your Network Volume is properly attached to the endpoint"
+    echo "5. Check that the installation completed successfully without errors"
 fi
 
 echo "Starting RunPod Handler"

@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-echo "Deleting Automatic1111 Web UI"
+
+echo "=== Minimal A1111 Installation Script ==="
+echo "This installs only basic Automatic1111 without extensions"
+echo ""
+
+echo "Deleting existing Automatic1111 Web UI"
 rm -rf /workspace/stable-diffusion-webui
 
-echo "Deleting venv"
+echo "Deleting existing venv"
 rm -rf /workspace/venv
 
 echo "Cloning A1111 repo to /workspace"
@@ -13,116 +18,138 @@ echo "Installing Ubuntu updates"
 apt update
 apt -y upgrade
 
-echo "Installing bc and aria2 Ubuntu packages"
+echo "Installing essential Ubuntu packages"
 apt -y install bc aria2
 
-echo "Creating and activating venv"
+echo "Creating and activating Python virtual environment"
 cd stable-diffusion-webui
 python3 -m venv /workspace/venv
 source /workspace/venv/bin/activate
 
-echo "Installing Torch"
+echo "Installing PyTorch (CUDA 11.8)"
 pip3 install --no-cache-dir torch==2.1.2+cu118 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 echo "Installing xformers"
 pip3 install --no-cache-dir xformers==0.0.23.post1 --index-url https://download.pytorch.org/whl/cu118
 
-echo "Installing A1111 Web UI"
+echo "Installing A1111 Web UI dependencies"
 wget https://raw.githubusercontent.com/ashleykleynhans/runpod-worker-a1111/main/install-automatic.py
 python3 -m install-automatic --skip-torch-cuda-test
-
-echo "Cloning ControlNet extension repo"
-cd /workspace/stable-diffusion-webui
-git clone --depth=1 https://github.com/Mikubill/sd-webui-controlnet.git extensions/sd-webui-controlnet
-
-echo "Cloning the ReActor extension repo"
-git clone https://github.com/Gourieff/sd-webui-reactor.git extensions/sd-webui-reactor
-git checkout v0.6.1
-
-echo "Cloning the After Detailer extension repo"
-git clone --depth=1 https://github.com/Bing-su/adetailer.git extensions/adetailer
-
-echo "Installing dependencies for ControlNet"
-cd /workspace/stable-diffusion-webui/extensions/sd-webui-controlnet
-pip3 install -r requirements.txt
-
-echo "Installing dependencies for ReActor"
-cd /workspace/stable-diffusion-webui/extensions/sd-webui-reactor
-pip3 install -r requirements.txt
-pip3 install onnxruntime-gpu
-
-echo "Installing dependencies for After Detailer"
-cd /workspace/stable-diffusion-webui/extensions/adetailer
-python3 -m install
-
-echo "Installing the model for ReActor"
-mkdir -p /workspace/stable-diffusion-webui/models/insightface
-cd /workspace/stable-diffusion-webui/models/insightface
-aria2c -o inswapper_128.onnx https://github.com/facefusion/facefusion-assets/releases/download/models/inswapper_128.onnx
-
-echo "Configuring ReActor to use the GPU instead of CPU"
-echo "CUDA" > /workspace/stable-diffusion-webui/extensions/sd-webui-reactor/last_device.txt
 
 echo "Installing RunPod Serverless dependencies"
 cd /workspace/stable-diffusion-webui
 pip3 install huggingface_hub runpod
 
-echo "Downloading Deliberate v2 model"
+echo "Creating essential directories"
+mkdir -p /workspace/logs
+mkdir -p /workspace/stable-diffusion-webui/models/Stable-diffusion
+mkdir -p /workspace/stable-diffusion-webui/models/VAE
+mkdir -p /workspace/stable-diffusion-webui/models/ESRGAN
+
+echo ""
+echo "=== Optional: Download basic models ==="
+echo "Downloading Deliberate v2 model (SD 1.5)"
 cd /workspace/stable-diffusion-webui/models/Stable-diffusion
 aria2c -o deliberate_v2.safetensors https://huggingface.co/ashleykleynhans/a1111-models/resolve/main/Stable-diffusion/deliberate_v2.safetensors
-
-echo "Downloading SDXL base model"
-aria2c -o sd_xl_base_1.0.safetensors https://huggingface.co/stabilityai/stable-diffusion-xl-base-1.0/resolve/main/sd_xl_base_1.0.safetensors
-
-echo "Downloading SDXL Refiner"
-aria2c -o sd_xl_refiner_1.0.safetensors https://huggingface.co/stabilityai/stable-diffusion-xl-refiner-1.0/resolve/main/sd_xl_refiner_1.0.safetensors
-
-echo "Downloading turboDiffusionXL v112 model"
-aria2c -o turboDiffusionXL_v112.safetensors https://huggingface.co/ashleykleynhans/a1111-models/resolve/main/Stable-diffusion/turboDiffusionXL_v112.safetensors
 
 echo "Downloading SD 1.5 VAE"
 cd /workspace/stable-diffusion-webui/models/VAE
 aria2c -o vae-ft-mse-840000-ema-pruned.safetensors https://huggingface.co/stabilityai/sd-vae-ft-mse-original/resolve/main/vae-ft-mse-840000-ema-pruned.safetensors
 
-echo "Downloading SDXL VAE"
-aria2c -o sdxl_vae.safetensors https://huggingface.co/madebyollin/sdxl-vae-fp16-fix/resolve/main/sdxl_vae.safetensors
-
-echo "Downloading SD 1.5 ControlNet models"
-mkdir -p /workspace/stable-diffusion-webui/models/ControlNet
-cd /workspace/stable-diffusion-webui/models/ControlNet
-aria2c -o control_v11p_sd15_openpose.pth https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_openpose.pth
-aria2c -o control_v11p_sd15_canny.pth https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_canny.pth
-aria2c -o control_v11f1p_sd15_depth.pth https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11f1p_sd15_depth.pth
-aria2c -o control_v11p_sd15_inpaint.pth https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_inpaint.pth
-aria2c -o control_v11p_sd15_lineart.pth https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11p_sd15_lineart.pth
-aria2c -o control_v1p_sd15_brightness.safetensors https://huggingface.co/ioclab/ioc-controlnet/resolve/main/models/control_v1p_sd15_brightness.safetensors
-aria2c -o control_v11f1e_sd15_tile.pth https://huggingface.co/lllyasviel/ControlNet-v1-1/resolve/main/control_v11f1e_sd15_tile.pth
-
-echo "Downloading SDXL ControlNet models"
-aria2c -o diffusers_xl_canny_full.safetensors https://huggingface.co/lllyasviel/sd_control_collection/resolve/main/diffusers_xl_canny_full.safetensors
-
-echo "Downloading InstantID ControlNet models"
-aria2c -o ip-adapter_instant_id_sdxl.bin "https://huggingface.co/InstantX/InstantID/resolve/main/ip-adapter.bin?download=true"
-aria2c -o control_instant_id_sdxl.safetensors "https://huggingface.co/InstantX/InstantID/resolve/main/ControlNetModel/diffusion_pytorch_model.safetensors?download=true"
-
-echo "Downloading Upscalers"
-mkdir -p /workspace/stable-diffusion-webui/models/ESRGAN
+echo "Downloading basic upscaler"
 cd /workspace/stable-diffusion-webui/models/ESRGAN
 aria2c -o 4x-UltraSharp.pth https://huggingface.co/ashleykleynhans/upscalers/resolve/main/4x-UltraSharp.pth
-aria2c -o lollypop.pth https://huggingface.co/ashleykleynhans/upscalers/resolve/main/lollypop.pth
 
-echo "Creating log directory"
-mkdir -p /workspace/logs
-
-echo "Installing config files"
+echo "Installing minimal config files"
 cd /workspace/stable-diffusion-webui
-rm webui-user.sh config.json ui-config.json
-wget https://raw.githubusercontent.com/ashleykleynhans/runpod-worker-a1111/main/webui-user.sh
-wget https://raw.githubusercontent.com/ashleykleynhans/runpod-worker-a1111/main/config.json
-wget https://raw.githubusercontent.com/ashleykleynhans/runpod-worker-a1111/main/ui-config.json
+rm -f webui-user.sh config.json ui-config.json
 
-echo "Starting A1111 Web UI"
+# Create minimal config files
+cat > webui-user.sh << 'EOF'
+#!/bin/bash
+export COMMANDLINE_ARGS="--listen --port 3000 --api --skip-version-check --no-download-sd-model"
+EOF
+
+cat > config.json << 'EOF'
+{
+  "outdir_samples": "",
+  "outdir_txt2img_samples": "/workspace/stable-diffusion-webui/outputs/txt2img-images",
+  "outdir_img2img_samples": "/workspace/stable-diffusion-webui/outputs/img2img-images",
+  "outdir_grids": "/workspace/stable-diffusion-webui/outputs/txt2img-grids",
+  "outdir_txt2img_grids": "/workspace/stable-diffusion-webui/outputs/txt2img-grids",
+  "outdir_save": "/workspace/stable-diffusion-webui/log/images",
+  "samples_format": "png",
+  "grid_format": "png",
+  "samples_filename_pattern": "",
+  "save_images_add_number": true,
+  "save_grid": true,
+  "return_grid": true,
+  "grid_prevent_empty_spots": false,
+  "save_incomplete_images": false,
+  "export_for_4chan": true,
+  "img_downscale_threshold": 4.0,
+  "target_side_length": 4000,
+  "img_max_size_mp": 200,
+  "use_original_name_batch": true,
+  "use_upscaler_name_as_suffix": false,
+  "save_selected_only": true,
+  "do_not_add_watermark": false
+}
+EOF
+
+cat > ui-config.json << 'EOF'
+{
+  "txt2img/Prompt/visible": true,
+  "txt2img/Prompt/value": "",
+  "txt2img/Negative prompt/visible": true,
+  "txt2img/Negative prompt/value": "",
+  "txt2img/Sampling method/visible": true,
+  "txt2img/Sampling method/value": "DPM++ SDE",
+  "txt2img/Sampling steps/visible": true,
+  "txt2img/Sampling steps/value": 20,
+  "txt2img/Width/visible": true,
+  "txt2img/Width/value": 512,
+  "txt2img/Height/visible": true,
+  "txt2img/Height/value": 512,
+  "txt2img/CFG Scale/visible": true,
+  "txt2img/CFG Scale/value": 7.0,
+  "txt2img/Seed/visible": true,
+  "txt2img/Seed/value": -1
+}
+EOF
+
+chmod +x webui-user.sh
+
+echo ""
+echo "=== Testing A1111 Installation ==="
+echo "Starting A1111 Web UI for initial setup..."
 deactivate
 export HF_HOME="/workspace"
 cd /workspace/stable-diffusion-webui
-./webui.sh -f
+./webui.sh -f &
+
+echo ""
+echo "=== Installation Complete ==="
+echo ""
+echo "✅ Minimal A1111 installation completed!"
+echo ""
+echo "What was installed:"
+echo "  - Basic Automatic1111 WebUI"
+echo "  - PyTorch + xformers"
+echo "  - RunPod serverless dependencies"
+echo "  - Deliberate v2 model (SD 1.5)"
+echo "  - Basic VAE and upscaler"
+echo ""
+echo "What was NOT installed:"
+echo "  ❌ ControlNet extension"
+echo "  ❌ ReActor extension"
+echo "  ❌ ADetailer extension"
+echo "  ❌ Extension-specific models"
+echo ""
+echo "To add your own models:"
+echo "  - Checkpoints: /workspace/stable-diffusion-webui/models/Stable-diffusion/"
+echo "  - VAE models: /workspace/stable-diffusion-webui/models/VAE/"
+echo "  - LoRA models: /workspace/stable-diffusion-webui/models/Lora/"
+echo "  - Embeddings: /workspace/stable-diffusion-webui/embeddings/"
+echo ""
+echo "Wait for A1111 to finish loading, then press Ctrl+C to stop and terminate the pod."
