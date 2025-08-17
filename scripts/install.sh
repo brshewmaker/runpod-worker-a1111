@@ -19,12 +19,20 @@ apt update
 apt -y upgrade
 
 echo "Installing essential Ubuntu packages"
-apt -y install bc aria2
+apt -y install bc aria2 python3-venv python3-pip
 
 echo "Creating and activating Python virtual environment"
 cd stable-diffusion-webui
-python3 -m venv /workspace/venv
+python3 -m venv /workspace/venv --system-site-packages
 source /workspace/venv/bin/activate
+
+# Verify venv activation
+if [[ "$VIRTUAL_ENV" != "" ]]; then
+    echo "✅ Virtual environment activated: $VIRTUAL_ENV"
+else
+    echo "❌ Failed to activate virtual environment"
+    exit 1
+fi
 
 echo "Installing PyTorch (CUDA 11.8)"
 pip3 install --no-cache-dir torch==2.1.2+cu118 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
@@ -34,7 +42,7 @@ pip3 install --no-cache-dir xformers==0.0.23.post1 --index-url https://download.
 
 echo "Installing A1111 Web UI dependencies"
 wget https://raw.githubusercontent.com/ashleykleynhans/runpod-worker-a1111/main/install-automatic.py
-python3 -m install-automatic --skip-torch-cuda-test
+python3 install-automatic.py --skip-torch-cuda-test
 
 echo "Installing RunPod Serverless dependencies"
 cd /workspace/stable-diffusion-webui
@@ -121,12 +129,9 @@ EOF
 chmod +x webui-user.sh
 
 echo ""
-echo "=== Testing A1111 Installation ==="
-echo "Starting A1111 Web UI for initial setup..."
+echo "=== Installation Complete - Skip Test Start ==="
+echo "Skipping initial A1111 startup test to avoid hanging installation"
 deactivate
-export HF_HOME="/workspace"
-cd /workspace/stable-diffusion-webui
-./webui.sh -f &
 
 echo ""
 echo "=== Installation Complete ==="
@@ -152,4 +157,7 @@ echo "  - VAE models: /workspace/stable-diffusion-webui/models/VAE/"
 echo "  - LoRA models: /workspace/stable-diffusion-webui/models/Lora/"
 echo "  - Embeddings: /workspace/stable-diffusion-webui/embeddings/"
 echo ""
-echo "Wait for A1111 to finish loading, then press Ctrl+C to stop and terminate the pod."
+echo "Installation complete! You can now:"
+echo "  1. Test A1111: cd /workspace/stable-diffusion-webui && ./webui.sh --api --port 3000"
+echo "  2. Deploy your RunPod serverless endpoint with the Docker image"
+echo "  3. The worker will automatically start A1111 when a job is received"
