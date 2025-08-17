@@ -93,7 +93,7 @@ def post_request(payload, runtype='runsync'):
     if runpod_api_key is not None and runpod_endpoint_id is not None:
         base_url = f'https://api.runpod.ai/v2/{runpod_endpoint_id}'
     else:
-        base_url = f'http://127.0.0.1:8000'
+        base_url = f'http://127.0.0.1:7040'
 
     r = requests.post(
         f'{base_url}/{runtype}',
